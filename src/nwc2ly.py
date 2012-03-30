@@ -80,8 +80,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################
     
 cp = SafeConfigParser()
-cp.read( 'C:\development\nwc2ly\hans version\nwc2ly.ini' )
-#/cygdrive/C/development/nwc2ly/hans\ version/
+cp.read( 'nwc2ly.ini' )
+
 debug			= int(cp.get('settings', 'debug'))
 relativePitch		= int(cp.get('settings', 'relativePitch'))
 relativeDuration	= int(cp.get('settings', 'relativeDuration'))
