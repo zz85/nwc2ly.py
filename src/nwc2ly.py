@@ -457,8 +457,8 @@ def getDuration(data):
 def getKey(data):
 	data = binascii.hexlify(data)
 
-	if keysigs.has_key(data):
-		return '\key ' + keysigs[data]
+	if KEYSIGS.has_key(data):
+		return '\key ' + KEYSIGS[data]
 	return '% unknown key'
 
 
@@ -476,7 +476,7 @@ def getLocation(data):
 def getAccidental(data):
 	data = ord(data)
 	data = data & 7
-	return acdts[data]
+	return ACCIDENTALS[data]
 
 
 def getDynVariance(data):
@@ -661,6 +661,29 @@ def processStaff(nwcData):
 		data = nwcData.read(1)
 		#print 'test', data
 
+		# # clef
+		# def clef_action():
+		# 	data = nwcData.read(6)
+		# 	clefCount += 1
+		# 	if debug: print binascii.hexlify(data), '  = clef ',
+
+		# 	key = ord(data[2]) & 3
+		# 	octave = ord(data[4]) & 3
+		# 	# print binascii.hexlify(data) , "CLEF? "
+		# 	lastClef = scale.index(clefs[key]) + octaves[octave]
+		# 	#TODO check for octave shifts _8
+		# 	#lastClef += CLEF_SHIFT[octave] # on ottava don't shift, just print 8va
+		# 	if debug: print CLEF_NAMES[key], CLEF_OCTAVE[octave]
+		# 	result += '\clef "' + CLEF_NAMES[key] + CLEF_OCTAVE[octave]+ '"\n\t\t'
+
+		# handlers = {
+		# 	'\x00': clef_action,
+
+		# }
+
+		# if data in handlers:
+		# 	handlers[data]()
+
 		# clef
 		if data=='\x00':
 			data = nwcData.read(6)
@@ -672,9 +695,9 @@ def processStaff(nwcData):
 			# print binascii.hexlify(data) , "CLEF? "
 			lastClef = scale.index(clefs[key]) + octaves[octave]
 			#TODO check for octave shifts _8
-			#lastClef += clefShift[octave] # on ottava don't shift, just print 8va
-			if debug: print clefNames[key], clefOctave[octave]
-			result += '\clef "' + clefNames[key] + clefOctave[octave]+ '"\n\t\t'
+			#lastClef += CLEF_SHIFT[octave] # on ottava don't shift, just print 8va
+			if debug: print CLEF_NAMES[key], CLEF_OCTAVE[octave]
+			result += '\clef "' + CLEF_NAMES[key] + CLEF_OCTAVE[octave]+ '"\n\t\t'
 
 		# key signature
 		elif data=='\x01':
@@ -708,15 +731,17 @@ def processStaff(nwcData):
 		# barline
 		elif data=='\x02':
 			data = nwcData.read(4)
-			#if debug: print '  = Barline ', barlines[ ord(data[2]) ]
-			#if debug: print binascii.hexlify(data)
+			barline_index = ord(data[2]) & 15
+			if debug: print binascii.hexlify(barline_index)
+			if debug: print '  = Barline ', barlines[ barline_index ]
+
 			barlineCount += 1
 			currentKey = lastKey.copy()
 
 			if ( data[2] == '\x00' ):
 				result += "|\n\t\t"
 			else:
-				result += "\\bar \"" + barlines[ ord(data[2]) ] + "\"\n\t\t"
+				result += "\\bar \"" + barlines[ barline_index ] + "\"\n\t\t"
 
 			if dualVoice == 1:	   # no beams and slurs with two voices
 				result += "%Todo: check for slurs and beams in the bar above\n\t\t"
@@ -755,7 +780,7 @@ def processStaff(nwcData):
 			beatValue = beatValues[ord(data[4])]
 			timesig = str(beats) + "/"  + str(beatValue)
 			if debug: print '  = Timesig', timesig
-			lastTimesig = timesigValues[timesig]
+			lastTimesig = TIME_SIG_VALUES[timesig]
 			result += "\\time " + timesig + " "
 
 		# Tempo
@@ -1144,7 +1169,7 @@ def processStaff(nwcData):
 
 # Variables
 
-keysigs = {
+KEYSIGS = {
 	'00000000': 'c \major % or a \minor',
 	'00000020': 'g \major % or e \minor',
 	'00000024': 'd \major % or b \minor',
@@ -1162,7 +1187,7 @@ keysigs = {
 	'007f0000': 'ces \major % or a \minor',
 }
 
-acdts = (
+ACCIDENTALS = (
 	'is',
 	'es',
 	'!',
@@ -1212,7 +1237,7 @@ clefs = {
 	3: "a'",
 }
 
-clefNames = {
+CLEF_NAMES = {
 	0: 'treble',
 	1: 'bass',
 	2: 'alto',
@@ -1387,14 +1412,14 @@ beams = ['', '[', '', ']']
 # Dynamics stop '\! '
 # style = ff pp
 
-clefOctave = ['', '^8', '_8', '']
-clefShift = [0, 7, -7, 0]
+CLEF_OCTAVE = ['', '^8', '_8', '']
+CLEF_SHIFT = [0, 7, -7, 0]
 
 # '#(set-accidental-style '#39'modern-cautionary)'
 # (ly:set-point-and-click 'line-column)
 # (set-global-staff-size 20)
 
-timesigValues = {
+TIME_SIG_VALUES = {
 	'4/4': '1',
 	'3/4': '2.',
 	'2/4': '2',
@@ -1435,7 +1460,7 @@ try:
 		nwcData = open('uncompressed.nwc', 'rb')
 		nwcData.seek(6)
 	elif format != '[Note':
-		print 'Unknown format, please use an uncompressed NWC format and try again.'
+		print 'Unknown format, please use an uncompressed NWC format and try again. Peek (', format, ')'
 		sys.exit()
 
 	if debug:
