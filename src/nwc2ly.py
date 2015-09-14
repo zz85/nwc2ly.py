@@ -732,7 +732,7 @@ def processStaff(nwcData):
 		elif data=='\x02':
 			data = nwcData.read(4)
 			barline_index = ord(data[2]) & 15
-			if debug: print binascii.hexlify(barline_index)
+			if debug: print binascii.hexlify(data[2])
 			if debug: print '  = Barline ', barlines[ barline_index ]
 
 			barlineCount += 1
@@ -1412,8 +1412,8 @@ beams = ['', '[', '', ']']
 # Dynamics stop '\! '
 # style = ff pp
 
-CLEF_OCTAVE = ['', '^8', '_8', '']
-CLEF_SHIFT = [0, 7, -7, 0]
+CLEF_OCTAVE = ('', '^8', '_8', '')
+CLEF_SHIFT = (0, 7, -7, 0)
 
 # '#(set-accidental-style '#39'modern-cautionary)'
 # (ly:set-point-and-click 'line-column)
