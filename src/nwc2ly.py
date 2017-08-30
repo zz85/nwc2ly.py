@@ -89,7 +89,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #           Options             #
 #################################
 
-extralyricfluff = re.compile('(\d.)')
+extralyricfluff = re.compile('(\d.)|(?<=\S)_\s')
+dashes = re.compile('(-)')
+carriagereturn = re.compile('\r')
 
 cp = SafeConfigParser()
 cp.read('nwc2ly.ini')
@@ -377,6 +379,8 @@ def findStaffInfo(nwcData):
 		nwcData.read(1)
 
 	lyricsContent = extralyricfluff.sub("", lyricsContent) # Strip out the decimals from the lyrics
+	lyricsContent = dashes.sub(" -- ", lyricsContent) # Put in the proper dashes in the lyrics 
+	lyricsContent = carriagereturn.sub('\n', lyricsContent) # Take out gross windows line endings
 	nwcData.read(1)
 	color = ord(nwcData.read(1)) & 3  # 12
 
@@ -435,8 +439,9 @@ def getLyrics(nwcData):
 		data += nwcData.read(1024)
 
 	lyrics = data[1:lyricsLen - 1]
-
+	
 	lyrics = lyrics.replace('\x00', '_ ')
+	lyrics = lyrics.replace('\x92', "'")
 
 	print 'lyrics ', lyrics
 	return lyrics
