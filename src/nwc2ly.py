@@ -4,6 +4,7 @@ import binascii
 import sys
 import zlib
 import traceback
+import re
 from ConfigParser import SafeConfigParser
 
 shortcopyleft = \
@@ -87,6 +88,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #################################
 #           Options             #
 #################################
+
+extralyricfluff = re.compile('(\d.)')
 
 cp = SafeConfigParser()
 cp.read('nwc2ly.ini')
@@ -366,12 +369,14 @@ def findStaffInfo(nwcData):
 
 			# lyricsContent  += '\\ \lyricmode { ' # lyrics
 
-			lyricsContent = str(getLyrics(nwcData))  #
+			#lyricsContent = str(getLyrics(nwcData))  #
+			lyricsContent += '\n\t\t\\addlyrics{ ' + str(getLyrics(nwcData)) + '}'
 
 			# lyricsContent  += '}'
 
 		nwcData.read(1)
 
+	lyricsContent = extralyricfluff.sub("", lyricsContent) # Strip out the decimals from the lyrics
 	nwcData.read(1)
 	color = ord(nwcData.read(1)) & 3  # 12
 
@@ -650,7 +655,7 @@ def processStaff(nwcData):
 
 			result += "}\n\t"
 			if lyrics!='':
-				result += '\n\t\t\\addlyrics{ ' + lyrics + '}'
+				result += lyrics
 			result += "\n\t}\n\t"
 			print "going next staff! %s" % nwcData.tell()
 			break
