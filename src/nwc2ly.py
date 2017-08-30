@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 import binascii
 import sys
@@ -11,6 +11,7 @@ shortcopyleft = \
 nwc2ly - Converts NWC(v 1.75) to LY fileformat
 Copyright (C) 2005  Joshua Koo (joshuakoo @ myrealbox.com)
 and                 Hans de Rijck (hans @ octet.nl)
+and                 Thomas Downs (tnelsond @ gmail.com)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
