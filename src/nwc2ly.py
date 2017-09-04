@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 import binascii
 import sys
 import zlib
 import traceback
+import re
 from ConfigParser import SafeConfigParser
 
 shortcopyleft = \
@@ -11,6 +12,7 @@ shortcopyleft = \
 nwc2ly - Converts NWC(v 1.75) to LY fileformat
 Copyright (C) 2005  Joshua Koo (joshuakoo @ myrealbox.com)
 and                 Hans de Rijck (hans @ octet.nl)
+and                 Thomas Downs (tnelsond @ gmail.com)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -30,62 +32,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##
 #
 # 15 May 2011. imported from http://lily4jedit.svn.sourceforge.net/viewvc/lily4jedit/trunk/LilyPondTool/otherpatches/nwc2ly/nwc2ly.py?revision=457&content-type=text%2Fplain&pathrev=476
-# Updated email
 #
-##
 # most infomation obtained about the nwc format
 # is by using noteworthycomposer and the somewhat like the french cafe method
 # (http://samba.org/ftp/tridge/misc/french_cafe.txt)
 #
-#
-##
-# Revisions
-# 0.1	07 april 2005 initial hex parsing;
-# 0.2	13 april 2005 added multiple staff, keysig, dots, durations
-# 0.3	14 april 2005 clef, key sig detection, absolute notes pitching
-# 0.4   15 April 2005 Relative Pitchs, Durations, Accidentals, Stem Up/Down, Beam, Tie
-# 0.5   16 April 2005 Bug fixes, Generate ly score , Write to file, Time Sig, Triplets, Experimental chords
-# 0.6 	17 April 2005 Compressed NWC file Supported!
-# 0.7 	19 April 2005 Version detection, Header
-#	20 April 2005 BUGS FiXes, small Syntax changes
-#	21 April 2005 Still fixing aimlessly
-#	23 April 2005 Chords Improvement
-#	24 April 2005 staccato, accent, tenuto. dynamics, midi detection (but unsupported)
-# 0.8	24 April 2005 Experimental Lyrics Support
-# 0.9	29 April 2005 Workround for \acciaccatura, simple Check full bar rest adjustment
-# 1.0   10 July  2005 Hans de Rijck,
-#			added dynamics, dynamic variance, tempo, tempo variance,
-#			performance style, page layout properties
-#			corrected barlines, lyrics, slurs, natural accidentals
-#			using inifile for settings
-#			limited support for NWC version 2.0
-# 1.1	13 Sept 2015 Slight formatting.
-#
-##
-# TODO
-# Proper syntax and structure for staffs, lyrics, layering
-# version 1.7 Support
-# nwc2ly in lilytool
-#
-# Piano Staff
-# Chords
-# Midi Instruments
-# Visability
-# Lyrics
-# Context Staff
-# Staff layering / Merging
-##
-#
-# BUGS text markups, chords
-######
-#
-# cd /cygdrive/c/development/nwc2ly
-# $ python nwc2ly.py lvb7th1\ uncompressed.nwc test.ly > convert.log
-#######
-
 #################################
 #           Options             #
 #################################
+
+extralyricfluff = re.compile('(\d.)|(?<=\S)_\s')
+dashes = re.compile('(-)')
+carriagereturn = re.compile('\r')
 
 cp = SafeConfigParser()
 cp.read('nwc2ly.ini')
@@ -182,7 +140,6 @@ def getFileInfo(nwcData):
 
 # Page Setup
 def getPageSetup(nwcData):
-	# ??
 	margins = getMargins(nwcData)
 	# getContents(nwcData)
 	# getOptions(nwcData)
@@ -350,8 +307,6 @@ def findStaffInfo(nwcData):
 
 	nwcData.read(2)
 
-	# lyrics = ord(nwcData.read(1)) & 1
-
 	lyrics = readInt(nwcData)
 	noOfLyrics = readInt(nwcData)
 
@@ -363,14 +318,13 @@ def findStaffInfo(nwcData):
 			print 'looping ', i, 'where', nwcData.tell(), \
 				'NoOfLyrics:', noOfLyrics
 
-			# lyricsContent  += '\\ \lyricmode { ' # lyrics
-
-			lyricsContent = str(getLyrics(nwcData))  #
-
-			# lyricsContent  += '}'
+			lyricsContent += '\n\t\t\\addlyrics{ ' + str(getLyrics(nwcData)) + '}'
 
 		nwcData.read(1)
 
+	lyricsContent = extralyricfluff.sub("", lyricsContent) # Strip out the decimals from the lyrics
+	lyricsContent = dashes.sub(" -- ", lyricsContent) # Put in the proper dashes in the lyrics 
+	lyricsContent = carriagereturn.sub('\n', lyricsContent) # Take out gross Windows line endings
 	nwcData.read(1)
 	color = ord(nwcData.read(1)) & 3  # 12
 
@@ -429,8 +383,9 @@ def getLyrics(nwcData):
 		data += nwcData.read(1024)
 
 	lyrics = data[1:lyricsLen - 1]
-
+	
 	lyrics = lyrics.replace('\x00', '_ ')
+	lyrics = lyrics.replace('\x92', "'")
 
 	print 'lyrics ', lyrics
 	return lyrics
@@ -649,7 +604,7 @@ def processStaff(nwcData):
 
 			result += "}\n\t"
 			if lyrics!='':
-				result += '\n\t\t\\addlyrics{ ' + lyrics + '}'
+				result += lyrics
 			result += "\n\t}\n\t"
 			print "going next staff! %s" % nwcData.tell()
 			break
@@ -766,9 +721,6 @@ def processStaff(nwcData):
 			if debug: print "Instrument Patch",
 			data = nwcData.read(10)
 			if debug: print binascii.hexlify(data)
-			#readLn(nwcData)
-			#readLn(nwcData)
-			#readLn(nwcData)
 
 		# timesig
 		elif data=='\x05':
@@ -852,7 +804,6 @@ def processStaff(nwcData):
 			elif lastChord>0:
 				if debug: print 'Chord last ', durVal(duration), lastChord
 				dur = durVal(duration)
-				#lastChord = 1.0/((1.0 / lastChord) - (1.0/durVal(duration)))
 				lastChord -= dur
 
 				if lastChord <= 0 :
