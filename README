@@ -1,1 +1,3 @@
 An importer for converting binary Noteworthy Composer files to Lilypond files
+
+UPDATE: a newer javascript incarnation of the nwc parser can be found at https://github.com/zz85/nwc-viewer
